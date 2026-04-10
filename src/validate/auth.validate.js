@@ -1,0 +1,86 @@
+import { AppError, consoleError } from "../utils/index.js"
+import { allowedSignUpFields, reqBodyNotPresentTxt, allowedLoginFields, unauthorizedAccessTxt } from "../utils/index.js"
+import validator from 'validator'
+
+export const validateLoginReqBody = (req) => {
+    // Validate Reqbody
+    if (!req?.body || Object.keys(req?.body || {}).length === 0) throw new AppError(reqBodyNotPresentTxt, 400)
+
+    const reqBody = req.body
+    const reqBodyFields = Object.keys(reqBody)
+
+    // Validate Reqbody fields
+    const extraFields = reqBodyFields.filter((d) => !allowedLoginFields.includes(d));
+    const isMissingFields = !allowedLoginFields.every(d => reqBodyFields.includes(d))
+
+    // Validate Extrafields
+    if (extraFields.length !== 0) {
+        consoleError({ message: `fields are not allowed: [${extraFields.join(", ")}]` })
+        throw new AppError(unauthorizedAccessTxt, 401)
+    }
+    // Validate Missing Fields
+    if (isMissingFields) {
+        consoleError({ message: `Required fields are missing: [${allowedLoginFields.join(", ")}]` })
+        throw new AppError(unauthorizedAccessTxt, 401)
+    }
+
+    const { email, password } = reqBody
+    const loginValidation = [
+        { isValid: !email, message: "Please provide email" },
+        { isValid: !validator.isEmail(email), message: "Please provide valid email" },
+        { isValid: !password, message: "Please provide password" },
+    ]
+
+    for (const check of loginValidation) {
+        if (check.isValid) {
+            consoleError({ message: check?.message })
+            throw new AppError(unauthorizedAccessTxt, 401)
+        }
+    }
+
+
+    return { email: email.trim(), password: password.trim() }
+
+}
+
+
+export const validateRegisterReqBody = (req) => {
+    if (!req?.body || Object.keys(req?.body || {}).length === 0) throw new AppError(reqBodyNotPresentTxt, 400)
+
+    const reqBody = req.body
+    const reqBodyFields = Object.keys(reqBody)
+
+    const extraFields = reqBodyFields.filter(f => !allowedSignUpFields.includes(f))
+    if (extraFields.length > 0) {
+        const errorMsg = `fields are not allowed: [${extraFields.join(", ")}]`
+        throw new AppError(errorMsg, 400)
+    }
+
+    const isMissingFields = !allowedSignUpFields.every(f => reqBodyFields.includes(f))
+    if (isMissingFields) {
+        const errorMsg = `Required fields are missing: ${allowedSignUpFields.join(", ")}`
+        throw new AppError(errorMsg, 400)
+    }
+
+    const { name, email, password } = reqBody;
+
+    // Validate Req Body Fields
+    const signupFieldValidation = [
+        { isValid: !name.trim(), message: "Please provide name" },
+        { isValid: name.trim().length > 30, message: "name should be less then 30 character" },
+        { isValid: !email.trim(), message: "Please provide email" },
+        { isValid: !validator.isEmail(email.trim()), message: "Please provide valid email" },
+        { isValid: !password.trim(), message: "Please provide password" },
+        { isValid: !validator.isStrongPassword(password.trim(), { minLength: 8, minLowercase: 1, minNumbers: 1, minSymbols: 1, minUppercase: 1 }), message: "Please provide strong password" },
+    ]
+
+    for (const check of signupFieldValidation) {
+        if (check.isValid) {
+            throw new AppError(check.message, 400)
+        }
+    }
+
+    return reqBody
+}
+
+
