@@ -1,10 +1,10 @@
-import { AppError, consoleError } from "../utils/index.js"
+import { AppError, consoleError, isNotValid, isRequired } from "../utils/index.js"
 import { allowedSignUpFields, reqBodyNotPresentTxt, allowedLoginFields, unauthorizedAccessTxt } from "../utils/index.js"
 import validator from 'validator'
 
-export const validateLoginReqBody = (req) => {
+export const validateLoginReqBody = (req,next) => {
     // Validate Reqbody
-    if (!req?.body || Object.keys(req?.body || {}).length === 0) throw new AppError(reqBodyNotPresentTxt, 400)
+    if (!req?.body || Object.keys(req?.body || {}).length === 0) next(new AppError(reqBodyNotPresentTxt, 400))
 
     const reqBody = req.body
     const reqBodyFields = Object.keys(reqBody)
@@ -16,36 +16,40 @@ export const validateLoginReqBody = (req) => {
     // Validate Extrafields
     if (extraFields.length !== 0) {
         consoleError({ message: `fields are not allowed: [${extraFields.join(", ")}]` })
-        throw new AppError(unauthorizedAccessTxt, 401)
+        return next(new AppError(unauthorizedAccessTxt, 401))
     }
     // Validate Missing Fields
     if (isMissingFields) {
         consoleError({ message: `Required fields are missing: [${allowedLoginFields.join(", ")}]` })
-        throw new AppError(unauthorizedAccessTxt, 401)
+        return next(new AppError(unauthorizedAccessTxt, 401))
     }
 
     const { email, password } = reqBody
     const loginValidation = [
-        { isValid: !email, message: "Please provide email" },
-        { isValid: !validator.isEmail(email), message: "Please provide valid email" },
-        { isValid: !password, message: "Please provide password" },
+        {field:"email", isValid: !email, message: isRequired },
+        {field:"email", isValid: !validator.isEmail(email), message: isNotValid },
+        {field:"password", isValid: !password, message: isRequired },
     ]
+
+    let err = {}
 
     for (const check of loginValidation) {
         if (check.isValid) {
-            consoleError({ message: check?.message })
-            throw new AppError(unauthorizedAccessTxt, 401)
+            err[check.field] = check.message
         }
     }
 
+    if(Object.keys(err).length>0){
+        return next(new AppError(unauthorizedAccessTxt, 401))
+    }
 
     return { email: email.trim(), password: password.trim() }
 
 }
 
 
-export const validateRegisterReqBody = (req) => {
-    if (!req?.body || Object.keys(req?.body || {}).length === 0) throw new AppError(reqBodyNotPresentTxt, 400)
+export const validateRegisterReqBody = (req, next) => {
+    if (!req?.body || Object.keys(req?.body || {}).length === 0) next(new AppError(reqBodyNotPresentTxt, 400))
 
     const reqBody = req.body
     const reqBodyFields = Object.keys(reqBody)
@@ -53,32 +57,38 @@ export const validateRegisterReqBody = (req) => {
     const extraFields = reqBodyFields.filter(f => !allowedSignUpFields.includes(f))
     if (extraFields.length > 0) {
         const errorMsg = `fields are not allowed: [${extraFields.join(", ")}]`
-        throw new AppError(errorMsg, 400)
+        return next(new AppError(errorMsg, 400))
     }
 
     const isMissingFields = !allowedSignUpFields.every(f => reqBodyFields.includes(f))
     if (isMissingFields) {
         const errorMsg = `Required fields are missing: ${allowedSignUpFields.join(", ")}`
-        throw new AppError(errorMsg, 400)
+        return next(new AppError(errorMsg, 400))
     }
 
     const { name, email, password } = reqBody;
 
     // Validate Req Body Fields
     const signupFieldValidation = [
-        { isValid: !name.trim(), message: "Please provide name" },
-        { isValid: name.trim().length > 30, message: "name should be less then 30 character" },
-        { isValid: !email.trim(), message: "Please provide email" },
-        { isValid: !validator.isEmail(email.trim()), message: "Please provide valid email" },
-        { isValid: !password.trim(), message: "Please provide password" },
-        { isValid: !validator.isStrongPassword(password.trim(), { minLength: 8, minLowercase: 1, minNumbers: 1, minSymbols: 1, minUppercase: 1 }), message: "Please provide strong password" },
+        { field:"name", isValid: !name.trim(), message: isRequired },
+        { field:"name", isValid: name.trim().length > 30, message: "should be less then 30 character" },
+        { field:"email", isValid: !email.trim(), message: isRequired },
+        { field:"email", isValid: !validator.isEmail(email.trim()), message: isNotValid },
+        { field:"password", isValid: !password.trim(), message: isRequired },
+        { field:"password", isValid: !validator.isStrongPassword(password.trim(), { minLength: 8, minLowercase: 1, minNumbers: 1, minSymbols: 1, minUppercase: 1 }), message: "is not strong" },
     ]
+
+    let err={};
 
     for (const check of signupFieldValidation) {
         if (check.isValid) {
-            throw new AppError(check.message, 400)
+            err[check.field] = check.message
         }
     }
+    if(Object.keys(err).length>0){
+        return next(new AppError("validation failed", 400, err))
+    }
+    
 
     return reqBody
 }

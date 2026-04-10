@@ -1,10 +1,10 @@
 import { Project } from "../model/project.model.js"
-import { consoleError, handleError, handleSendResponse, somethingWentWrongTxt } from "../utils/index.js"
+import { consoleError, handleSendResponse, internalServerErrTxt } from "../utils/index.js"
 import { validateCreateProReqBody } from "../validate/index.js"
 
 
 // handleGetAllProjects
-export const handleGetAllProjects = async (req, res) => {
+export const handleGetAllProjects = async (req, res, next) => {
     try {
 
         const {userId} = req.user
@@ -16,13 +16,12 @@ export const handleGetAllProjects = async (req, res) => {
 
     } catch (error) {
         consoleError(error)
-        const statusCode = error.statusCode || 500
-        handleError(res, statusCode, error?.message || somethingWentWrongTxt)
+        next(new AppError(internalServerErrTxt, 500))
     }
 }
 
 // handleCreateProject
-export const handleCreateProject = async (req, res) => {
+export const handleCreateProject = async (req, res, next) => {
     try {
 
         const reqBody = validateCreateProReqBody(req)
@@ -31,14 +30,13 @@ export const handleCreateProject = async (req, res) => {
 
     } catch (error) {
         consoleError(error)
-        const statusCode = error.statusCode || 500
-        handleError(res, statusCode, error?.message || somethingWentWrongTxt)
+        next(new AppError(internalServerErrTxt, 500))
     }
 }
 
 
 // handleGetProjectWithId
-export const handleGetProjectWithId = async (req, res) => {
+export const handleGetProjectWithId = async (req, res, next) => {
     try {
 
 
@@ -47,14 +45,13 @@ export const handleGetProjectWithId = async (req, res) => {
 
     } catch (error) {
         consoleError(error)
-        const statusCode = error.statusCode || 500
-        handleError(res, statusCode, error?.message || somethingWentWrongTxt)
+        next(new AppError(internalServerErrTxt, 500))
     }
 }
 
 
 // handleUpdateProject
-export const handleUpdateProject = async (req, res) => {
+export const handleUpdateProject = async (req, res, next) => {
     try {
 
 
@@ -63,14 +60,13 @@ export const handleUpdateProject = async (req, res) => {
 
     } catch (error) {
         consoleError(error)
-        const statusCode = error.statusCode || 500
-        handleError(res, statusCode, error?.message || somethingWentWrongTxt)
+        next(new AppError(internalServerErrTxt, 500))
     }
 }
 
 
 // handleDeleteProject
-export const handleDeleteProject = async (req, res) => {
+export const handleDeleteProject = async (req, res, next) => {
     try {
 
 
@@ -79,7 +75,6 @@ export const handleDeleteProject = async (req, res) => {
 
     } catch (error) {
         consoleError(error)
-        const statusCode = error.statusCode || 500
-        handleError(res, statusCode, error?.message || somethingWentWrongTxt)
+        next(new AppError(internalServerErrTxt, 500))
     }
 }
