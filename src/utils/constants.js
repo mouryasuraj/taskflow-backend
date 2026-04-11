@@ -11,8 +11,16 @@ export const allowedLoginFields = ["email", "password"]
 // Projects
 export const allowedCreateProFields = ["name","description","owner_id"]
 
+// task 
+export const allowedTaskFields = ["title","description","status","priority","project_id","assignee_id","due_date"]
+export const allowedTaskStatus =  ["todo", "in_progress", "done"]
+export const allowedTaskPriority =  ["low", "medium", "high"]
+
+// API
 export const allowedHeaders = ["Content-type", "Authorization"]
 export const allowedMethods = ["GET", "POST", "PUT", "DELETE"]
+
+
 
 
 // Error message

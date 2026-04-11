@@ -1,85 +1,89 @@
-import { Project } from "../model/project.model.js"
-import { AppError, consoleError, handleSendResponse, internalServerErrTxt } from "../utils/index.js"
-import { validateCreateProReqBody } from "../validate/index.js"
-
+import { Project } from "../model/project.model.js";
+import { Task } from "../model/task.model.js";
+import { handleSendResponse, internalServerErrTxt, logError } from "../utils/index.js";
+import { valGetProjectDetailsReqBody, validateCreateProReqBody } from "../validate/index.js";
 
 // handleGetAllProjects
 export const handleGetAllProjects = async (req, res, next) => {
-    try {
+  try {
+    const { userId } = req.user;
+    const {page=1, limit=20} = req.query
 
-        const {userId} = req.user
+    // Get all projects createby loggedin user
+    const projects = await Project.find({
+      owner_id: userId,
+    }).lean()
+    .select("-__v")
+    .skip((page-1) * limit)
+    .limit(limit)
+    .sort({createdAt:-1});
 
-
-        // Get all projects createby loggedin user
-        console.log(userId);
-        
-        const projects = await Project.find({owner_id:userId})
-        
-        handleSendResponse(res, 200, true, "Project list", projects)
-
-    } catch (error) {
-        consoleError(error)
-        next(new AppError(internalServerErrTxt, 500))
-    }
-}
+    handleSendResponse(res, 200, true, "Project list", projects);
+  } catch (error) {
+    logError(internalServerErrTxt, error.message, error.stack);
+    next({ ...error, message: internalServerErrTxt });
+  }
+};
 
 // handleCreateProject
 export const handleCreateProject = async (req, res, next) => {
-    try {
+  try {
+    const reqBody = validateCreateProReqBody(req, next);
 
-        const reqBody = validateCreateProReqBody(req, next)
+    const project = new Project(reqBody);
+    const newProject = await project.save();
 
-        const project = new Project(reqBody)
-        const newProject = await project.save()
-
-        handleSendResponse(res, 201, true, "Project created successfully", newProject)
-
-    } catch (error) {
-        consoleError(error)
-        next(new AppError(internalServerErrTxt, 500))
-    }
-}
-
+    handleSendResponse(
+      res,
+      201,
+      true,
+      "Project created successfully",
+      newProject,
+    );
+  } catch (error) {
+    logError(internalServerErrTxt, error.message, error.stack);
+    next({ ...error, message: internalServerErrTxt });
+  }
+};
 
 // handleGetProjectWithId
 export const handleGetProjectWithId = async (req, res, next) => {
-    try {
+  try {
+    const projectId = valGetProjectDetailsReqBody(req,next)
 
+    const project = await Project.findById(projectId).lean().select('-__v')
 
-        handleSendResponse(res, 200, true, "Project", {})
+    // Get tasks of this project
+    const tasks = await Task.find({project_id:projectId}).lean().select("-__v")
 
-    } catch (error) {
-        consoleError(error)
-        next(new AppError(internalServerErrTxt, 500))
+    const response = {
+      ...project,
+      tasks
     }
-}
 
+    handleSendResponse(res, 200, true, "Project", response);
+  } catch (error) {
+    logError(internalServerErrTxt, error.message, error.stack);
+    next({ ...error, message: internalServerErrTxt });
+  }
+};
 
 // handleUpdateProject
 export const handleUpdateProject = async (req, res, next) => {
-    try {
-
-
-
-        handleSendResponse(res, 200, true, "Project updated successfully", {})
-
-    } catch (error) {
-        consoleError(error)
-        next(new AppError(internalServerErrTxt, 500))
-    }
-}
-
+  try {
+    handleSendResponse(res, 200, true, "Project updated successfully", {});
+  } catch (error) {
+    logError(internalServerErrTxt, error.message, error.stack);
+    next({ ...error, message: internalServerErrTxt });
+  }
+};
 
 // handleDeleteProject
 export const handleDeleteProject = async (req, res, next) => {
-    try {
-
-
-
-        handleSendResponse(res, 200, true, "Project deleted successfully", {})
-
-    } catch (error) {
-        consoleError(error)
-        next(new AppError(internalServerErrTxt, 500))
-    }
-}
+  try {
+    handleSendResponse(res, 200, true, "Project deleted successfully", {});
+  } catch (error) {
+    logError(internalServerErrTxt, error.message, error.stack);
+    next({ ...error, message: internalServerErrTxt });
+  }
+};

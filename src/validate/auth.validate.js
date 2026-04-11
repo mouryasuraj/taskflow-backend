@@ -1,10 +1,10 @@
-import { AppError, consoleError, isNotValid, isRequired } from "../utils/index.js"
+import { AppError, consoleError, isNotValid, isRequired, logError } from "../utils/index.js"
 import { allowedSignUpFields, reqBodyNotPresentTxt, allowedLoginFields, unauthorizedAccessTxt } from "../utils/index.js"
 import validator from 'validator'
 
 export const validateLoginReqBody = (req,next) => {
     // Validate Reqbody
-    if (!req?.body || Object.keys(req?.body || {}).length === 0) next(new AppError(reqBodyNotPresentTxt, 400))
+    if (!req?.body || Object.keys(req?.body || {}).length === 0) return next(new AppError(reqBodyNotPresentTxt, 400))
 
     const reqBody = req.body
     const reqBodyFields = Object.keys(reqBody)
@@ -27,7 +27,7 @@ export const validateLoginReqBody = (req,next) => {
     const { email, password } = reqBody
     const loginValidation = [
         {field:"email", isValid: !email, message: isRequired },
-        {field:"email", isValid: !validator.isEmail(email), message: isNotValid },
+        {field:"email", isValid: email && !validator.isEmail(email), message: isNotValid },
         {field:"password", isValid: !password, message: isRequired },
     ]
 
@@ -38,10 +38,14 @@ export const validateLoginReqBody = (req,next) => {
             err[check.field] = check.message
         }
     }
-
+    
+    
+    
     if(Object.keys(err).length>0){
+        logError(unauthorizedAccessTxt, err.message, err.stack)
         return next(new AppError(unauthorizedAccessTxt, 401))
     }
+    
 
     return { email: email.trim(), password: password.trim() }
 
@@ -49,7 +53,7 @@ export const validateLoginReqBody = (req,next) => {
 
 
 export const validateRegisterReqBody = (req, next) => {
-    if (!req?.body || Object.keys(req?.body || {}).length === 0) next(new AppError(reqBodyNotPresentTxt, 400))
+    if (!req?.body || Object.keys(req?.body || {}).length === 0) return next(new AppError(reqBodyNotPresentTxt, 400))
 
     const reqBody = req.body
     const reqBodyFields = Object.keys(reqBody)
@@ -71,11 +75,11 @@ export const validateRegisterReqBody = (req, next) => {
     // Validate Req Body Fields
     const signupFieldValidation = [
         { field:"name", isValid: !name.trim(), message: isRequired },
-        { field:"name", isValid: name.trim().length > 30, message: "should be less then 30 character" },
+        { field:"name", isValid: name && name.trim().length > 30, message: "should be less then 30 character" },
         { field:"email", isValid: !email.trim(), message: isRequired },
-        { field:"email", isValid: !validator.isEmail(email.trim()), message: isNotValid },
+        { field:"email", isValid: email && !validator.isEmail(email.trim()), message: isNotValid },
         { field:"password", isValid: !password.trim(), message: isRequired },
-        { field:"password", isValid: !validator.isStrongPassword(password.trim(), { minLength: 8, minLowercase: 1, minNumbers: 1, minSymbols: 1, minUppercase: 1 }), message: "is not strong" },
+        { field:"password", isValid: password &&  !validator.isStrongPassword(password.trim(), { minLength: 8, minLowercase: 1, minNumbers: 1, minSymbols: 1, minUppercase: 1 }), message: "is not strong" },
     ]
 
     let err={};

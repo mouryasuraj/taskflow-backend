@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import { validateRegisterReqBody, validateLoginReqBody } from "../validate/auth.validate.js"
-import { AppError, consoleError, handleSendResponse, emailAlreadyExistsTxt, internalServerErrTxt, unauthorizedAccessTxt } from "../utils/index.js"
+import { AppError, handleSendResponse, emailAlreadyExistsTxt, internalServerErrTxt, unauthorizedAccessTxt, logError } from "../utils/index.js"
 import { User } from "../model/index.js"
 import { env, privateKey } from '../config/index.js'
 
@@ -15,12 +15,10 @@ export const handleLogin = async (req, res,next) => {
 
         // Check user existence
         const user = await User.findOne({ email })
-        if (!user) next(new AppError("user not found", 404))
-        
-
+        if (!user) return next(new AppError("user not found", 404))
         // Verify password
         const isPassValid = await user.isPasswordValid(password)
-        if (!isPassValid) next(new AppError("Invalid password", 401))
+        if (!isPassValid) return next(new AppError("Invalid password", 401))
 
         const id = user?._id.toString()
 
@@ -49,11 +47,10 @@ export const handleLogin = async (req, res,next) => {
             userId: id,
             email: user.email,
         }
-
         handleSendResponse(res, 200, true, "Logged in successfully", userData)
     } catch (error) {
-        consoleError(error)
-        next(new AppError(unauthorizedAccessTxt, 401))
+        logError(internalServerErrTxt,error.message, error.stack)
+        next({...error, message:internalServerErrTxt})
     }
 }
 
@@ -66,7 +63,7 @@ export const handleRegister = async (req, res, next) => {
 
         // Check user already exists or not
         const existingUser = await User.findOne({ email })
-        if (existingUser) next(new AppError(emailAlreadyExistsTxt, 409))
+        if (existingUser) return next(new AppError(emailAlreadyExistsTxt, 409))
 
         // Hash password
         const hashedPassword = await bcrypt.hash(password, Number(env.SALT_ROUND))
@@ -86,8 +83,8 @@ export const handleRegister = async (req, res, next) => {
         handleSendResponse(res, 201, true, "User has been registered", response)
 
     } catch (error) {
-        consoleError(error)  // Log error
-        next(new AppError(internalServerErrTxt, 500))
+        logError(internalServerErrTxt,error.message, error.stack)
+        next({...error, message:internalServerErrTxt})
     }
 }
 
@@ -99,8 +96,8 @@ export const handleLogout = async (req, res,next) => {
         handleSendResponse(res, 200, true, "Logged out successfully")
 
     } catch (error) {
-        consoleError(error)
-        next(new AppError("Logout failed", 500))
+        logError(internalServerErrTxt,error.message, error.stack)
+        next({...error, message:"Logout failed"})
     }
 }
 
@@ -111,7 +108,7 @@ export const handleVerifyToken = async (req, res,next) => {
         const user = req.user
         handleSendResponse(res, 200, true, "Token verified successfully", user)
     } catch (error) {
-        consoleError(error)
-        next(new AppError("token verification failed", 500))
+        logError(internalServerErrTxt,error.message, error.stack)
+        next({...error, message:"token verification failed"})
     }
 }

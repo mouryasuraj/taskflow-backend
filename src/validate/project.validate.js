@@ -2,7 +2,7 @@ import { allowedCreateProFields, AppError, consoleError, isRequired, reqBodyNotP
 
 export const validateCreateProReqBody = (req,next) => {
     // Validate Reqbody
-    if (!req?.body || Object.keys(req?.body || {}).length === 0) next(new AppError(reqBodyNotPresentTxt, 400))
+    if (!req?.body || Object.keys(req?.body || {}).length === 0) return next(new AppError(reqBodyNotPresentTxt, 400))
 
     const reqBody = req.body
     const reqBodyFields = Object.keys(reqBody)
@@ -30,4 +30,11 @@ export const validateCreateProReqBody = (req,next) => {
         }
 
     return reqBody
+}
+
+
+export const valGetProjectDetailsReqBody = (req, next) =>{
+    const {id} = req.params
+    if(!id) return next(new AppError("project id is required", 400))
+    return id
 }

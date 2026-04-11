@@ -6,6 +6,7 @@ import { AppError, consoleError } from "../utils/index.js"
 import jwt from 'jsonwebtoken'
 
 export const authMiddleware = async (req, res, next) => {
+    
     try {
 
         const accessToken = req.cookies.accessToken

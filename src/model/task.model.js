@@ -1,4 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
+import { allowedTaskPriority, allowedTaskStatus } from '../utils/index.js';
 
 const taskSchema = new Schema({
     title: {
@@ -12,13 +13,13 @@ const taskSchema = new Schema({
     },
     status: {
         type: String,
-        enum: ["todo", "in_progress", "done"],
-        default: this.status.enum[0]
+        enum: allowedTaskStatus,
+        default: "todo"
     },
     priority: {
         type: String,
-        enum: ["low", "medium", "high"],
-        default: this.status.enum[0]
+        enum: allowedTaskPriority,
+        default: "low"
     },
     project_id: {
         type: mongoose.Schema.Types.ObjectId,
