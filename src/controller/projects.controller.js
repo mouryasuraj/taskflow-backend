@@ -1,5 +1,5 @@
 import { Project } from "../model/project.model.js"
-import { consoleError, handleSendResponse, internalServerErrTxt } from "../utils/index.js"
+import { AppError, consoleError, handleSendResponse, internalServerErrTxt } from "../utils/index.js"
 import { validateCreateProReqBody } from "../validate/index.js"
 
 
@@ -9,7 +9,10 @@ export const handleGetAllProjects = async (req, res, next) => {
 
         const {userId} = req.user
 
+
         // Get all projects createby loggedin user
+        console.log(userId);
+        
         const projects = await Project.find({owner_id:userId})
         
         handleSendResponse(res, 200, true, "Project list", projects)
@@ -24,9 +27,12 @@ export const handleGetAllProjects = async (req, res, next) => {
 export const handleCreateProject = async (req, res, next) => {
     try {
 
-        const reqBody = validateCreateProReqBody(req)
-        
-        handleSendResponse(res, 201, true, "Project created successfully", reqBody)
+        const reqBody = validateCreateProReqBody(req, next)
+
+        const project = new Project(reqBody)
+        const newProject = await project.save()
+
+        handleSendResponse(res, 201, true, "Project created successfully", newProject)
 
     } catch (error) {
         consoleError(error)
@@ -38,7 +44,6 @@ export const handleCreateProject = async (req, res, next) => {
 // handleGetProjectWithId
 export const handleGetProjectWithId = async (req, res, next) => {
     try {
-
 
 
         handleSendResponse(res, 200, true, "Project", {})

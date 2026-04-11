@@ -1,8 +1,8 @@
-import { allowedCreateProFields, AppError, consoleError, reqBodyNotPresentTxt, unauthorizedAccessTxt } from "../utils/index.js";
+import { allowedCreateProFields, AppError, consoleError, isRequired, reqBodyNotPresentTxt, unauthorizedAccessTxt } from "../utils/index.js";
 
-export const validateCreateProReqBody = (req) => {
+export const validateCreateProReqBody = (req,next) => {
     // Validate Reqbody
-    if (!req?.body || Object.keys(req?.body || {}).length === 0) throw new AppError(reqBodyNotPresentTxt, 400)
+    if (!req?.body || Object.keys(req?.body || {}).length === 0) next(new AppError(reqBodyNotPresentTxt, 400))
 
     const reqBody = req.body
     const reqBodyFields = Object.keys(reqBody)
@@ -15,19 +15,18 @@ export const validateCreateProReqBody = (req) => {
     if (extraFields.length !== 0) {
         const errMessage = `fields are not allowed: [${extraFields.join(", ")}]`
         consoleError({ message: errMessage })
-        throw new AppError(errMessage, 400)
+        return next(new AppError(errMessage, 400))
     }
     // Validate Missing Fields
     if (isMissingFields) {
         const errMessage = `Required fields are missing: [${allowedCreateProFields.join(", ")}]`
         consoleError({ message: errMessage })
-        throw new AppError(errMessage, 400);
+        return next(new AppError(errMessage, 400));
     }
 
     const { name} = reqBody
         if (!name) {
-            consoleError({ message: "Please provide name" })
-            throw new AppError("Please provide name", 400)
+            return next(new AppError("validation failed", 400, {name:isRequired}))
         }
 
     return reqBody
