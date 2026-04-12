@@ -10,6 +10,7 @@ export const allowedLoginFields = ["email", "password"]
 
 // Projects
 export const allowedCreateProFields = ["name","description","owner_id"]
+export const allowedUpdateProFields = ["name","description","owner_id"]
 
 // task 
 export const allowedTaskFields = ["title","description","status","priority","project_id","assignee_id","due_date"]
