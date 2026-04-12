@@ -46,6 +46,7 @@ export const handleLogin = async (req, res,next) => {
         const userData = {
             userId: id,
             email: user.email,
+            name:user.name
         }
         handleSendResponse(res, 200, true, "Logged in successfully", userData)
     } catch (error) {

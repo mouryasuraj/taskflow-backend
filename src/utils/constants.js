@@ -19,8 +19,8 @@ export const allowedTaskStatus =  ["todo", "in_progress", "done"]
 export const allowedTaskPriority =  ["low", "medium", "high"]
 
 // API
-export const allowedHeaders = ["Content-type", "Authorization"]
-export const allowedMethods = ["GET", "POST", "PUT", "DELETE"]
+export const allowedHeaders = ["Content-Type", "Authorization"]
+export const allowedMethods = ["GET", "POST","PUT", "PATCH", "DELETE"]
 
 
 
