@@ -1,10 +1,14 @@
+import { logger } from "../config/logger.js";
+import { Project } from "../model/project.model.js";
 import { Task } from "../model/task.model.js";
 import {
+  AppError,
   handleSendResponse,
   internalServerErrTxt,
   logError,
+  unauthorizedAccessTxt,
 } from "../utils/index.js";
-import { validateGetTaskReqBody, validateTaskReqBody } from "../validate/index.js";
+import { validateDeleteTask, validateGetTaskReqBody, validateTaskReqBody, validateUpdateTaskReqBody } from "../validate/index.js";
 
 // handleGetTasks
 export const handleGetTasks = async (req, res, next) => {
@@ -12,7 +16,7 @@ export const handleGetTasks = async (req, res, next) => {
     const filter = validateGetTaskReqBody(req,next)
     const {page=1, limit=20} = req.query
 
-    const totalTaskCount = await Task.countDocuments()
+    const totalCounts = await Task.countDocuments({project_id:filter.project_id})
     const tasks = await Task.find(filter)
     .lean()
     .select("-__v")
@@ -20,9 +24,10 @@ export const handleGetTasks = async (req, res, next) => {
     .limit(limit)
 
     const response = {
-        totalPages: Math.ceil(totalTaskCount / limit),
+        totalPages: Math.ceil(totalCounts / limit),
         currPage:page,
-        tasks
+        totalCounts,
+        tasks,
     }
 
     handleSendResponse(res, 200, true, "Task list", response);
@@ -51,7 +56,35 @@ export const handleCreateTask = async (req, res, next) => {
 // handleUpdateTask
 export const handleUpdateTask = async (req, res, next) => {
   try {
-    handleSendResponse(res, 200, true, "Task updated successfully", {});
+    
+    const reqBody = validateUpdateTaskReqBody(req, next)
+    const {id} = req.params
+    const {userId} = req.user
+
+    const project = await Project.findById(reqBody.project_id)
+    if(!project){
+        const msg = `no project found: ${id}`
+        logError(msg, msg)
+        return next(new AppError(`no project found`,404))
+    }
+    let updatedTask;
+    if(userId.equals(project.owner_id)){
+      updatedTask = await Task.findByIdAndUpdate(id, reqBody, {returnDocument:"after"}).lean().select("-__v")
+    }else if(userId.equals(reqBody.assignee_id)){
+      console.log("mera naame");
+      updatedTask = await Task.findByIdAndUpdate(id, {status:reqBody.status}, {returnDocument:"after"}).lean().select("-__v")
+    }else{
+      logError("Unauthorized action", "Unauthorized action")
+      return next(new AppError("Unauthorized action",403))
+    }
+    // update task
+
+    if(!updatedTask){
+    logError(`no task found to update against id: ${id}`, `no task found to update against id: ${id}`);
+      return next(new AppError("No task found", 404))
+    }
+
+    handleSendResponse(res, 200, true, "Task updated successfully", updatedTask);
   } catch (error) {
     logError(internalServerErrTxt, error.message, error.stack);
     next({ ...error, message: internalServerErrTxt });
@@ -61,7 +94,30 @@ export const handleUpdateTask = async (req, res, next) => {
 // handleDeleteTask
 export const handleDeleteTask = async (req, res, next) => {
   try {
-    handleSendResponse(res, 200, true, "Task deleted successfully", {});
+
+  const {id, project_id} = validateDeleteTask(req, next)
+  const {userId} = req.user
+
+  const project = await Project.findById(project_id)
+  if(!project){
+      const msg = `no project found: ${id}`
+      logError(msg, msg)
+      return next(new AppError(`no project found`,404))
+  }
+  if(!userId.equals(project.owner_id)){
+      logError("Unauthorized action", "Unauthorized action")
+      return next(new AppError("Unauthorized action",403))
+  }
+
+
+    const task = await Task.findByIdAndDelete(id)
+    if(!task){
+      const msg = `no task found to delete against id: ${id}`
+      logError(msg, msg)
+      return next(new AppError(`no task found to delete against id: ${id}`,400))
+    }
+
+    handleSendResponse(res, 200, true, "Task deleted successfully");
   } catch (error) {
     logError(internalServerErrTxt, error.message, error.stack);
     next({ ...error, message: internalServerErrTxt });

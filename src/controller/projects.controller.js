@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { Project } from "../model/project.model.js";
 import { Task } from "../model/task.model.js";
-import { AppError, consoleError, handleSendResponse, internalServerErrTxt, logError, unauthorizedAccessTxt } from "../utils/index.js";
+import { AppError, handleSendResponse, internalServerErrTxt, logError, unauthorizedAccessTxt } from "../utils/index.js";
 import { valGetProjectDetailsReqBody, validateCreateProReqBody, validateUpdateProjectReqBody } from "../validate/index.js";
 import { logger } from "../config/logger.js";
 
@@ -10,6 +10,8 @@ export const handleGetAllProjects = async (req, res, next) => {
   try {
     const { userId } = req.user;
     const {page=1, limit=20} = req.query
+
+    const totalCounts = await Project.countDocuments({owner_id:userId})
 
     // Get all projects createby loggedin user
     const projects = await Project.find({
@@ -20,7 +22,14 @@ export const handleGetAllProjects = async (req, res, next) => {
     .limit(limit)
     .sort({createdAt:-1});
 
-    handleSendResponse(res, 200, true, "Project list", projects);
+    const data = {
+      totalPages: Math.ceil(totalCounts/limit),
+      currPage:page,
+      totalCounts,
+      projects
+    }
+
+    handleSendResponse(res, 200, true, "Project list", data);
   } catch (error) {
     logError(internalServerErrTxt, error.message, error.stack);
     next({ ...error, message: internalServerErrTxt });
@@ -117,6 +126,50 @@ export const handleDeleteProject = async (req, res, next) => {
     logger.info(`Project deleted successfully: ${deletedProject}`)
 
     handleSendResponse(res, 200, true, "Project deleted successfully", deletedProject);
+
+  } catch (error) {
+    logError(internalServerErrTxt, error.message, error.stack);
+    next({ ...error, message: internalServerErrTxt });
+  }
+};
+
+
+
+// handleProjectStats
+export const handleProjectStats = async (req, res, next) => {
+  try {
+    const {id} = req.params
+    if(!id) return next(new AppError("project id is required"))
+    
+    const projectStats = await Task.aggregate([
+      {
+        $match:{
+          project_id: new mongoose.Types.ObjectId(id)
+        }
+      },
+      {
+        $facet:{
+          statusCount:[
+            {
+              $group:{
+              _id:"$status",
+              count: {$sum:1}
+            }
+          }
+          ],
+          assigneeCount:[
+            {
+              $group:{
+              _id:"$assignee_id",
+              count: {$sum:1}
+            }
+          }
+          ]
+        }
+      }
+    ])
+
+    handleSendResponse(res, 200, true, "Project stats", projectStats);
   } catch (error) {
     logError(internalServerErrTxt, error.message, error.stack);
     next({ ...error, message: internalServerErrTxt });

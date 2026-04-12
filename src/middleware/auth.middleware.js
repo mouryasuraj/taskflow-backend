@@ -1,8 +1,8 @@
 import crypto from 'crypto'
 import { env, publicKey } from "../config/index.js"
-import { unauthorizedAccessTxt } from "../utils/index.js"
+import { logError, unauthorizedAccessTxt } from "../utils/index.js"
 import { User } from "../model/index.js"
-import { AppError, consoleError } from "../utils/index.js"
+import { AppError } from "../utils/index.js"
 import jwt from 'jsonwebtoken'
 
 export const authMiddleware = async (req, res, next) => {
@@ -30,7 +30,7 @@ export const authMiddleware = async (req, res, next) => {
         next()
 
     } catch (error) {
-        consoleError(error)
+        logError("Unauthorized acesss", error.message, error.stack)
         next(new AppError(unauthorizedAccessTxt, 401))
     }
 }

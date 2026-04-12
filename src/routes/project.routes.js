@@ -1,6 +1,6 @@
 import express from "express";
 import { authMiddleware } from "../middleware/index.js";
-import { handleCreateProject, handleCreateTask, handleDeleteProject, handleDeleteTask, handleGetAllProjects, handleGetProjectWithId, handleGetTasks, handleUpdateProject, handleUpdateTask } from "../controller/index.js";
+import { handleCreateProject, handleCreateTask, handleDeleteProject, handleDeleteTask, handleGetAllProjects, handleGetProjectWithId, handleGetTasks, handleProjectStats, handleUpdateProject, handleUpdateTask } from "../controller/index.js";
 
 
 export const projectRouter = express.Router()
@@ -10,6 +10,7 @@ projectRouter.post("/",authMiddleware, handleCreateProject)
 projectRouter.get("/:id",authMiddleware, handleGetProjectWithId)
 projectRouter.patch("/:id",authMiddleware, handleUpdateProject)
 projectRouter.delete("/:id",authMiddleware, handleDeleteProject)
+projectRouter.get("/:id/stats",authMiddleware, handleProjectStats)
 
 // Task
 projectRouter.get("/:id/tasks",authMiddleware, handleGetTasks)

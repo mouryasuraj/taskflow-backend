@@ -1,4 +1,4 @@
-import { AppError, consoleError, isNotValid, isRequired, logError } from "../utils/index.js"
+import { AppError, isNotValid, isRequired, logError } from "../utils/index.js"
 import { allowedSignUpFields, reqBodyNotPresentTxt, allowedLoginFields, unauthorizedAccessTxt } from "../utils/index.js"
 import validator from 'validator'
 
@@ -15,12 +15,14 @@ export const validateLoginReqBody = (req,next) => {
 
     // Validate Extrafields
     if (extraFields.length !== 0) {
-        consoleError({ message: `fields are not allowed: [${extraFields.join(", ")}]` })
+        const message= `fields are not allowed: [${extraFields.join(", ")}]`
+        logError("Validation failed", message, {})
         return next(new AppError(unauthorizedAccessTxt, 401))
     }
     // Validate Missing Fields
     if (isMissingFields) {
-        consoleError({ message: `Required fields are missing: [${allowedLoginFields.join(", ")}]` })
+        const message= `Required fields are missing: [${allowedLoginFields.join(", ")}]`
+        logError("Validation failed", message, {})
         return next(new AppError(unauthorizedAccessTxt, 401))
     }
 

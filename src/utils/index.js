@@ -1,4 +1,3 @@
-export * from './consoleError.js'
 export * from './handleSendResponse.js'
 export * from './custom.js'
 export * from './getStandardErrorMessage.js'
