@@ -53,7 +53,6 @@ export const validateTaskReqBody = (req, next) => {
       message: isNotValid,
     },
     { field: "project_id", isValid: !project_id.trim(), message: isRequired },
-    { field: "assignee_id", isValid: !assignee_id.trim(), message: isRequired },
   ];
 
   let err = {};

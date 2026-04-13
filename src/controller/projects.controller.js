@@ -20,7 +20,7 @@ export const handleGetAllProjects = async (req, res, next) => {
     .select("-__v")
     .skip((page-1) * limit)
     .limit(limit)
-    .sort({createdAt:-1});
+    .sort({updatedAt:-1});
 
     const data = {
       totalPages: Math.ceil(totalCounts/limit),
@@ -65,14 +65,15 @@ export const handleGetProjectWithId = async (req, res, next) => {
     const project = await Project.findById(projectId).lean().select('-__v')
 
     // Get tasks of this project
-    const tasks = await Task.find({project_id:projectId}).lean().select("-__v")
+    const tasks = await Task.find({project_id:projectId}).lean()
+    .populate("assignee_id", "name").select("-__v").sort({updatedAt:-1})
 
     const response = {
       ...project,
       tasks
     }
 
-    handleSendResponse(res, 200, true, "Project", response);
+    handleSendResponse(res, 200, true, "Project details fetched", response);
   } catch (error) {
     logError(internalServerErrTxt, error.message, error.stack);
     next({ ...error, message: internalServerErrTxt });

@@ -18,10 +18,12 @@ export const handleGetTasks = async (req, res, next) => {
 
     const totalCounts = await Task.countDocuments({project_id:filter.project_id})
     const tasks = await Task.find(filter)
+    .populate("assignee_id", "name")
     .lean()
     .select("-__v")
     .skip((page - 1) * limit)
     .limit(limit)
+    .sort({updatedAt:-1});
 
     const response = {
         totalPages: Math.ceil(totalCounts / limit),
@@ -69,9 +71,8 @@ export const handleUpdateTask = async (req, res, next) => {
     }
     let updatedTask;
     if(userId.equals(project.owner_id)){
-      updatedTask = await Task.findByIdAndUpdate(id, reqBody, {returnDocument:"after"}).lean().select("-__v")
+      updatedTask = await Task.findByIdAndUpdate(id, reqBody, {returnDocument:"after"}).lean().select("-__v").populate("assignee_id", "name _id")
     }else if(userId.equals(reqBody.assignee_id)){
-      console.log("mera naame");
       updatedTask = await Task.findByIdAndUpdate(id, {status:reqBody.status}, {returnDocument:"after"}).lean().select("-__v")
     }else{
       logError("Unauthorized action", "Unauthorized action")
@@ -117,7 +118,7 @@ export const handleDeleteTask = async (req, res, next) => {
       return next(new AppError(`no task found to delete against id: ${id}`,400))
     }
 
-    handleSendResponse(res, 200, true, "Task deleted successfully");
+    handleSendResponse(res, 200, true, "Task deleted successfully", {_id:task._id});
   } catch (error) {
     logError(internalServerErrTxt, error.message, error.stack);
     next({ ...error, message: internalServerErrTxt });

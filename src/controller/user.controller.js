@@ -113,3 +113,19 @@ export const handleVerifyToken = async (req, res,next) => {
         next({...error, message:"token verification failed"})
     }
 }
+
+// handleGetUsers
+export const handleGetUsers = async (req, res,next) => {
+    try {
+        const {userId} = req.user
+        const users = await User.find({_id:{
+            $ne: userId
+        }}).select("name email")
+
+        handleSendResponse(res, 200, true, "Token verified successfully", users)
+    } catch (error) {
+        logError(internalServerErrTxt,error.message, error.stack)
+        next({...error, message:"token verification failed"})
+    }
+}
+
